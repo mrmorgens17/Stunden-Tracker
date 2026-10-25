@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>WorkPulse - Überstunden & Zeiterfassung</title>
+  
+  <!-- Web App & PWA Settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="WorkPulse" />
+  <meta name="theme-color" content="#090d16" />
+
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Custom Scrollbar & Touch Optimizations */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea, select {
+      user-select: auto;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Print Styling for DIN A4 PDF Export */
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-size: 11pt !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      #print-area {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .print-page {
+        page-break-after: avoid;
+        page-break-inside: avoid;
+      }
+      table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+      }
+      th, td {
+        border: 1px solid #d1d5db !important;
+        padding: 5px 8px !important;
+        color: #111827 !important;
+      }
+      th {
+        background-color: #f3f4f6 !important;
+        font-weight: 700 !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen antialiased flex flex-col items-center justify-start pb-12 selection:bg-indigo-500 selection:text-white">
+
+  <!-- ==========================================
+       MAIN APP CONTAINER (Mobile Framed / Max-w-md)
+  =========================================== -->
+  <div class="w-full max-w-md sm:max-w-lg min-h-screen flex flex-col no-print px-3 py-2 sm:px-4 sm:py-3 space-y-3">
+
+    <!-- Top App Bar -->
+    <header class="flex items-center justify-between pt-1 pb-2 border-b border-slate-800/80">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+          <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent leading-none">
+            WorkPulse
+          </h1>
+          <span class="text-[10px] text-slate-400 font-medium">Überstunden & Zeiterfassung</span>
+        </div>
+      </div>
+
+      <!-- Action Icons: Gesamtstand, PDF & Config -->
+      <div class="flex items-center space-x-1.5">
+        <div class="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 flex items-center space-x-1.5">
+          <span class="text-[11px] text-slate-400">Gesamt:</span>
+          <span id="header-total-balance" class="text-xs font-bold font-mono text-emerald-400">+84.0h</span>
+        </div>
+
+        <button onclick="openReportModal()" title="Monatsbericht / PDF" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+        </button>
+
+        <button onclick="openConfigModal()" title="Einstellungen" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition active:scale-95">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- KPI Summary Cards -->
+    <section class="grid grid-cols-3 gap-2">
+      <!-- Monat Ist -->
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-2.5 text-center flex flex-col justify-between shadow-sm">
+        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Monat Ist</span>
+        <div id="kpi-month-worked" class="text-base sm:text-lg font-bold font-mono text-white my-0.5">0.0h</div>
+        <span id="kpi-month-target" class="text-[10px] text-slate-500">Soll: 0.0h</span>
+      </div>
+
+      <!-- Monat Saldo -->
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-2.5 text-center flex flex-col justify-between shadow-sm">
+        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Monat Saldo</span>
+        <div id="kpi-month-balance" class="text-base sm:text-lg font-bold font-mono text-emerald-400 my-0.5">±0.0h</div>
+        <span class="text-[10px] text-slate-500">Schwelle: 9h</span>
+      </div>
+
+      <!-- Jahr Saldo -->
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-2.5 text-center flex flex-col justify-between shadow-sm">
+        <span id="kpi-year-label" class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Jahr 2026</span>
+        <div id="kpi-year-balance" class="text-base sm:text-lg font-bold font-mono text-indigo-400 my-0.5">+72.0h</div>
+        <span class="text-[10px] text-slate-500">Ausgleich inkl.</span>
+      </div>
+    </section>
+
+    <!-- Month Navigation Bar -->
+    <div class="flex items-center justify-between bg-slate-900/60 border border-slate-800/70 rounded-2xl px-3 py-2">
+      <button onclick="changeMonth(-1)" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition active:scale-95">
+        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+      </button>
+
+      <div class="text-center">
+        <h2 id="calendar-month-year" class="text-sm sm:text-base font-bold text-white tracking-wide cursor-pointer hover:underline" onclick="jumpToToday()">
+          August 2026
+        </h2>
+        <span id="calendar-subtitle" class="text-[10px] text-slate-400 block font-normal">32h-Modell aktiv</span>
+      </div>
+
+      <div class="flex items-center space-x-1">
+        <button onclick="jumpToToday()" class="text-[11px] px-2 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white font-medium transition active:scale-95">
+          Heute
+        </button>
+        <button onclick="changeMonth(1)" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition active:scale-95">
+          <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Calendar View -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 sm:p-3 shadow-xl">
+      <!-- Day Headers (Mo-So) -->
+      <div class="grid grid-cols-7 gap-1 text-center mb-1.5">
+        <span class="text-[11px] font-bold text-slate-400">Mo</span>
+        <span class="text-[11px] font-bold text-slate-400">Di</span>
+        <span class="text-[11px] font-bold text-slate-400">Mi</span>
+        <span class="text-[11px] font-bold text-slate-400">Do</span>
+        <span class="text-[11px] font-bold text-slate-400">Fr</span>
+        <span class="text-[11px] font-bold text-slate-500">Sa</span>
+        <span class="text-[11px] font-bold text-slate-500">So</span>
+      </div>
+
+      <!-- Calendar Days Grid -->
+      <div id="calendar-grid" class="grid grid-cols-7 gap-1 sm:gap-1.5">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </div>
+
+    <!-- Legend Indicator -->
+    <div class="flex items-center justify-around px-2 py-1 bg-slate-900/40 rounded-xl text-[10px] text-slate-400 border border-slate-800/40">
+      <div class="flex items-center space-x-1">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>Überstunden</span>
+      </div>
+      <div class="flex items-center space-x-1">
+        <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+        <span>🌙 Nachtschicht</span>
+      </div>
+      <div class="flex items-center space-x-1">
+        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+        <span>Abbau</span>
+      </div>
+      <div class="flex items-center space-x-1">
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+        <span>Urlaub/Krank</span>
+      </div>
+    </div>
+
+    <!-- Actions & PDF Quick Link Card -->
+    <div class="grid grid-cols-2 gap-2.5">
+      <button onclick="openReportModal()" class="p-3 bg-gradient-to-r from-indigo-900/50 to-indigo-800/40 border border-indigo-700/50 rounded-2xl flex items-center space-x-3 text-left hover:border-indigo-500 transition active:scale-98">
+        <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md">
+          <i data-lucide="file-text" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-white leading-tight">Monatsbericht PDF</div>
+          <div class="text-[10px] text-indigo-300">Drucken & Signieren</div>
+        </div>
+      </button>
+
+      <button onclick="openEventsListModal()" class="p-3 bg-slate-900/80 border border-slate-800 rounded-2xl flex items-center space-x-3 text-left hover:border-slate-700 transition active:scale-98">
+        <div class="w-9 h-9 rounded-xl bg-violet-600/20 text-violet-400 border border-violet-500/30 flex items-center justify-center shrink-0">
+          <i data-lucide="list-checks" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-slate-200 leading-tight">Einsätze & PDF-Daten</div>
+          <div class="text-[10px] text-violet-300">16 Einsätze & Saldo</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Quick Action: Export CSV -->
+    <div class="flex items-center justify-between bg-slate-900/50 border border-slate-800/80 rounded-xl px-3 py-2 text-xs text-slate-400">
+      <div class="flex items-center space-x-1.5">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span>Gesamt: <strong class="text-emerald-400 font-mono">84.0h</strong> (12h Vorjahr + 72h 2026)</span>
+      </div>
+      <button onclick="exportCSV()" class="hover:text-white underline text-[11px] font-medium flex items-center gap-1">
+        <i data-lucide="file-spreadsheet" class="w-3 h-3"></i> CSV
+      </button>
+    </div>
+
+  </div>
+
+
+  <!-- ==========================================
+       DAY ENTRY BOTTOM SHEET / MODAL
+  =========================================== -->
+  <div id="day-modal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <span id="modal-date-display" class="text-xs font-semibold text-indigo-400 uppercase tracking-wider block">Datum</span>
+          <h3 id="modal-day-name" class="text-base sm:text-lg font-bold text-white">Arbeitszeit erfassen</h3>
+        </div>
+        <button onclick="closeDayModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Type Selector Chips -->
+      <div class="my-3">
+        <label class="text-[11px] font-semibold text-slate-400 block mb-1.5">Art des Tages</label>
+        <div class="grid grid-cols-3 gap-1.5 text-xs">
+          <button type="button" onclick="setEntryType('work')" id="type-btn-work" class="py-2 px-1 rounded-xl border border-indigo-600 bg-indigo-600/20 text-white font-medium text-center">
+            💼 Arbeit
+          </button>
+          <button type="button" onclick="setEntryType('reduction')" id="type-btn-reduction" class="py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-300 font-medium text-center">
+            ⏳ Zeitausgleich
+          </button>
+          <button type="button" onclick="setEntryType('vacation')" id="type-btn-vacation" class="py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-300 font-medium text-center">
+            🌴 Urlaub
+          </button>
+          <button type="button" onclick="setEntryType('sick')" id="type-btn-sick" class="py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-300 font-medium text-center">
+            🤒 Krank
+          </button>
+          <button type="button" onclick="setEntryType('holiday')" id="type-btn-holiday" class="py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-300 font-medium text-center">
+            🎉 Feiertag
+          </button>
+          <button type="button" onclick="setEntryType('off')" id="type-btn-off" class="py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-300 font-medium text-center">
+            🛋️ Frei
+          </button>
+        </div>
+      </div>
+
+      <!-- Work Time Input Section -->
+      <div id="work-input-fields" class="space-y-3">
+        
+        <!-- Input Mode Switch (Clock vs Direct Hours) -->
+        <div class="flex items-center justify-between text-xs bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button type="button" onclick="setMode('times')" id="mode-btn-times" class="flex-1 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold">
+            Von - Bis Zeiten (inkl. Nacht)
+          </button>
+          <button type="button" onclick="setMode('direct')" id="mode-btn-direct" class="flex-1 py-1.5 rounded-lg text-slate-400 font-medium">
+            Direktstunden
+          </button>
+        </div>
+
+        <!-- Mode Times -->
+        <div id="section-mode-times" class="space-y-2 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[11px] text-slate-400 block mb-1">Beginn</label>
+              <input type="time" id="input-start-time" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" onchange="calculateModalTimes()" />
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[11px] text-slate-400">Ende</label>
+                <span id="badge-overnight" class="hidden text-[10px] font-bold text-violet-300 bg-violet-950/80 px-1.5 py-0.2 rounded border border-violet-800/70">🌙 Folgetag (+1)</span>
+              </div>
+              <input type="time" id="input-end-time" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" onchange="calculateModalTimes()" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-[11px] text-slate-400">Pause (Minuten)</label>
+              <div class="flex space-x-1">
+                <button type="button" onclick="setBreakQuick(0)" class="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300">0m</button>
+                <button type="button" onclick="setBreakQuick(30)" class="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300">30m</button>
+                <button type="button" onclick="setBreakQuick(45)" class="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300">45m</button>
+                <button type="button" onclick="setBreakQuick(60)" class="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300">60m</button>
+              </div>
+            </div>
+            <input type="number" id="input-break-min" min="0" step="5" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" onchange="calculateModalTimes()" />
+          </div>
+        </div>
+
+        <!-- Mode Direct Hours -->
+        <div id="section-mode-direct" class="hidden">
+          <label class="text-[11px] text-slate-400 block mb-1">Geleistete Arbeitszeit (Dezimalstunden)</label>
+          <input type="number" step="0.25" min="0" max="24" id="input-direct-hours" placeholder="z. B. 12.0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:border-indigo-500 outline-none" oninput="calculateModalTimes()" />
+        </div>
+
+        <!-- Calculated Live Result Box -->
+        <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 space-y-1.5">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400">Arbeitszeit Ist:</span>
+            <span id="modal-calc-worked" class="font-mono font-bold text-white text-sm">0.00 Std.</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400">Soll-Arbeitszeit:</span>
+            <span id="modal-calc-target" class="font-mono text-slate-300">0.00 Std.</span>
+          </div>
+
+          <!-- Threshold explanation -->
+          <div class="pt-1 border-t border-slate-800/80 flex justify-between items-center text-xs">
+            <span class="text-slate-400 flex items-center space-x-1">
+              <span>Überstunden-Saldo:</span>
+              <span id="modal-badge-rule" class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/60 font-sans">ab 9h</span>
+            </span>
+            <span id="modal-calc-overtime" class="font-mono font-bold text-sm text-emerald-400">+0.00 Std.</span>
+          </div>
+          <div id="modal-calc-info" class="text-[10px] text-slate-500 leading-tight">
+            Überstunden werden ab 9.0 Stunden Arbeitszeit gutgeschrieben.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Description / Note -->
+      <div class="mt-3">
+        <label class="text-[11px] text-slate-400 block mb-1">Einsatz / Notiz / Veranstaltung</label>
+        <input type="text" id="input-entry-note" placeholder="z. B. Samstag 22:00 bis 10:00 Uhr, Clubnacht, Festival..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-indigo-500 outline-none" />
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex space-x-2 pt-4 mt-2">
+        <button type="button" onclick="deleteEntryCurrentDay()" id="btn-delete-entry" class="py-2.5 px-3 rounded-xl border border-rose-900/60 bg-rose-950/30 text-rose-400 hover:bg-rose-900/50 text-xs font-semibold flex items-center justify-center">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+        <button type="button" onclick="closeDayModal()" class="flex-1 py-2.5 rounded-xl border border-slate-800 bg-slate-800/50 hover:bg-slate-800 text-slate-300 text-xs font-semibold">
+          Abbrechen
+        </button>
+        <button type="button" onclick="saveDayModal()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-bold shadow-lg shadow-indigo-600/30">
+          Speichern
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ==========================================
+       SETTINGS & TIME MODELS MODAL
+  =========================================== -->
+  <div id="config-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+            <i data-lucide="sliders" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">App-Einstellungen</h3>
+            <span class="text-[10px] text-slate-400">Modelle, Überstunden-Regel & Altsaldo</span>
+          </div>
+        </div>
+        <button onclick="closeConfigModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 my-4 text-xs">
+        
+        <!-- Employee Details (For PDF) -->
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 space-y-2">
+          <span class="font-bold text-white block">Mitarbeiter-Angaben (für PDF-Bericht)</span>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-0.5">Vor- & Nachname</label>
+              <input type="text" id="cfg-employee-name" placeholder="Max Mustermann" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white" />
+            </div>
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-0.5">Personalnummer / Abt.</label>
+              <input type="text" id="cfg-employee-id" placeholder="z. B. 1042" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Overtime Threshold 9h Rule -->
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-bold text-white block">Überstunden-Schwelle</span>
+              <p class="text-[10px] text-slate-400">Überstunden erst ab Erreichen von X Stunden werten</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="cfg-threshold-enabled" class="sr-only peer" />
+              <div class="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+          </div>
+          <div class="flex items-center space-x-2 pt-1">
+            <span class="text-slate-400 text-xs">Schwellenwert:</span>
+            <input type="number" id="cfg-threshold-hours" step="0.5" min="1" max="24" value="9.0" class="w-20 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1 text-white font-mono text-center" />
+            <span class="text-slate-400 text-xs">Stunden pro Tag</span>
+          </div>
+        </div>
+
+        <!-- Initial Starting Balance (e.g. +12h from 2025) -->
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-white">Startsaldo / Altsaldo Übertrag</span>
+            <input type="number" step="0.5" id="cfg-initial-balance" value="12.0" class="w-24 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1 text-emerald-400 font-mono text-center font-bold" />
+          </div>
+          <p class="text-[10px] text-slate-400">Restüberstunden aus dem Vorjahr (z. B. 12.00 Std. aus 2025)</p>
+        </div>
+
+        <!-- Date-Dependent Work Models List -->
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-white">Arbeitszeit-Modelle (nach Datum)</span>
+            <button type="button" onclick="addCustomModel()" class="text-[11px] px-2 py-0.5 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 font-medium">
+              + Modell
+            </button>
+          </div>
+          <p class="text-[10px] text-slate-400">Automatische Umschaltung ab Stichtag (z. B. 32h bis 31.12., ab 01.01. dann 40h).</p>
+
+          <div id="models-list-container" class="space-y-2 pt-1">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Data Backup & Restore -->
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 space-y-2">
+          <span class="font-bold text-white block">Datensicherung & Speicher</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="downloadBackupJSON()" class="py-2 rounded-xl bg-slate-800 text-slate-200 hover:text-white font-medium flex items-center justify-center space-x-1.5">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Backup (JSON)</span>
+            </button>
+            <label class="py-2 rounded-xl bg-slate-800 text-slate-200 hover:text-white font-medium flex items-center justify-center space-x-1.5 cursor-pointer">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              <span>Import</span>
+              <input type="file" id="import-file" accept=".json" class="hidden" onchange="importBackupJSON(event)" />
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="flex space-x-2 pt-2 border-t border-slate-800">
+        <button onclick="closeConfigModal()" class="flex-1 py-2.5 rounded-xl border border-slate-800 bg-slate-800 text-slate-300 text-xs font-semibold">
+          Abbrechen
+        </button>
+        <button onclick="saveConfigModal()" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold">
+          Speichern
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ==========================================
+       EVENTS / PDF OVERVIEW LIST MODAL
+  =========================================== -->
+  <div id="events-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-4 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
+            <i data-lucide="database" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-white">Einsätze aus PDF (2026 Final)</h3>
+            <p class="text-[11px] text-slate-400">Übersicht aller 16 Einsätze, Übertrag 2025 und Freizeitausgleich</p>
+          </div>
+        </div>
+        <button onclick="closeEventsListModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- PDF Summary Cards -->
+      <div class="grid grid-cols-3 gap-2 my-3 text-center">
+        <div class="bg-slate-950/70 border border-slate-800 p-2 rounded-xl">
+          <span class="text-[9px] uppercase tracking-wider text-slate-500 block">Aufgebaut 2026</span>
+          <span class="text-sm font-bold font-mono text-emerald-400">+98.0h</span>
+        </div>
+        <div class="bg-slate-950/70 border border-slate-800 p-2 rounded-xl">
+          <span class="text-[9px] uppercase tracking-wider text-slate-500 block">Freizeitausgleich</span>
+          <span class="text-sm font-bold font-mono text-rose-400">-26.0h</span>
+        </div>
+        <div class="bg-slate-950/70 border border-slate-800 p-2 rounded-xl">
+          <span class="text-[9px] uppercase tracking-wider text-slate-500 block">Gesamtstand</span>
+          <span class="text-sm font-bold font-mono text-indigo-400">84.0h</span>
+        </div>
+      </div>
+
+      <!-- Events List -->
+      <div class="space-y-2 overflow-y-auto pr-1">
+        <div id="pdf-events-list" class="space-y-2 text-xs">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="pt-3 mt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+        <span class="text-[11px]">Klicke auf einen Eintrag, um ihn im Kalender zu öffnen.</span>
+        <button onclick="closeEventsListModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl transition">
+          Schließen
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==========================================
+       MONTHLY REPORT / PDF PRINT PREVIEW MODAL
+  =========================================== -->
+  <div id="report-modal" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-3xl rounded-2xl p-4 sm:p-6 shadow-2xl max-h-[95vh] overflow-y-auto no-scrollbar flex flex-col">
+      
+      <!-- Modal Top Bar -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 no-print">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+            <i data-lucide="file-check" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Monatsbericht & Stundennachweis</h3>
+            <span id="report-month-heading" class="text-xs text-slate-400">August 2026</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <button onclick="shareReport()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95">
+            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+            <span>Teilen</span>
+          </button>
+          <button onclick="window.print()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg shadow-indigo-600/30 transition active:scale-95">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Drucken / PDF</span>
+          </button>
+          <button onclick="closeReportModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- PRINTABLE AREA (A4 Friendly Layout) -->
+      <div id="print-area" class="mt-4 bg-white text-slate-900 rounded-xl p-6 sm:p-8 shadow-inner font-sans print-page">
+        
+        <!-- Document Header -->
+        <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-4">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900">Arbeitszeitnachweis</h2>
+            <p id="print-month-title" class="text-sm font-semibold text-slate-600">Monat: August 2026</p>
+          </div>
+          <div class="text-right text-xs text-slate-600">
+            <div class="font-bold text-sm text-slate-900" id="print-emp-name">Mitarbeiter: Max Mustermann</div>
+            <div id="print-emp-id">Personalnr: 1042</div>
+            <div id="print-created-date">Erstellt am: 25.10.2026</div>
+          </div>
+        </div>
+
+        <!-- Month Summary Key Metrics (Table / Boxes) -->
+        <div class="grid grid-cols-4 gap-2 mb-4 text-center">
+          <div class="border border-slate-300 rounded p-2 bg-slate-50">
+            <span class="text-[9px] uppercase font-bold text-slate-500 block">Soll-Arbeitszeit</span>
+            <span id="print-summary-target" class="text-sm sm:text-base font-bold font-mono text-slate-800">128.00 h</span>
+          </div>
+          <div class="border border-slate-300 rounded p-2 bg-slate-50">
+            <span class="text-[9px] uppercase font-bold text-slate-500 block">Ist-Arbeitszeit</span>
+            <span id="print-summary-worked" class="text-sm sm:text-base font-bold font-mono text-slate-800">136.00 h</span>
+          </div>
+          <div class="border border-slate-300 rounded p-2 bg-slate-50">
+            <span class="text-[9px] uppercase font-bold text-slate-500 block">Monats-Saldo</span>
+            <span id="print-summary-month-diff" class="text-sm sm:text-base font-bold font-mono text-slate-800">+8.00 h</span>
+          </div>
+          <div class="border border-slate-300 rounded p-2 bg-slate-100">
+            <span class="text-[9px] uppercase font-bold text-slate-500 block">Neuer Gesamtstand</span>
+            <span id="print-summary-total-balance" class="text-sm sm:text-base font-black font-mono text-slate-900">84.00 h</span>
+          </div>
+        </div>
+
+        <!-- Detailed Days Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-300">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                <th class="py-1.5 px-2">Tag</th>
+                <th class="py-1.5 px-2">Kategorie</th>
+                <th class="py-1.5 px-2">Von - Bis</th>
+                <th class="py-1.5 px-2 text-right">Pause</th>
+                <th class="py-1.5 px-2 text-right">Ist (h)</th>
+                <th class="py-1.5 px-2 text-right">Soll (h)</th>
+                <th class="py-1.5 px-2 text-right">Saldo</th>
+                <th class="py-1.5 px-2">Einsatz / Notiz</th>
+              </tr>
+            </thead>
+            <tbody id="print-table-body" class="divide-y divide-slate-200">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Legal Signature Section -->
+        <div class="grid grid-cols-2 gap-8 pt-10 mt-6 border-t border-slate-300 text-xs">
+          <div>
+            <div class="border-b border-slate-400 pb-8"></div>
+            <p class="mt-1 text-slate-600 font-medium">Datum, Unterschrift Arbeitnehmer</p>
+          </div>
+          <div>
+            <div class="border-b border-slate-400 pb-8"></div>
+            <p class="mt-1 text-slate-600 font-medium">Datum, Unterschrift Arbeitgeber / Vorgesetzter</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ==========================================
+       JAVASCRIPT LOGIC & STATE PERSISTENCE
+  =========================================== -->
+  <script>
+    /* ----------------------------------------------------
+       STORAGE KEYS & INITIAL CONFIG
+    ---------------------------------------------------- */
+    const STORAGE_KEY_ENTRIES = 'workpulse_entries_v4';
+    const STORAGE_KEY_CONFIG = 'workpulse_config_v4';
+
+    const defaultConfig = {
+      employeeName: 'Max Mustermann',
+      employeeId: '1042',
+      thresholdEnabled: true,
+      thresholdHours: 9.0,
+      initialBalance: 12.0, // Restüberstunden aus dem Vorjahr 2025
+      models: [
+        {
+          id: 'model-1',
+          name: 'Teilzeit 32h (4 Tage)',
+          validFrom: '2025-01-01',
+          targets: { 1: 8.0, 2: 8.0, 3: 8.0, 4: 8.0, 5: 0.0, 6: 0.0, 0: 0.0 }
+        },
+        {
+          id: 'model-2',
+          name: 'Vollzeit 40h (5 Tage)',
+          validFrom: '2027-01-01',
+          targets: { 1: 8.0, 2: 8.0, 3: 8.0, 4: 8.0, 5: 8.0, 6: 0.0, 0: 0.0 }
+        }
+      ]
+    };
+
+    // Pre-populated initial entries directly from PDF (all 16 Einsätze & Saldo 84.0h)
+    const initialPdfEntries = {
+      '2026-05-02': {
+        date: '2026-05-02', mode: 'times', start: '14:00', end: '06:00', isOvernight: true, breakMin: 0,
+        workedHours: 16.0, targetHours: 8.0, overrideDiff: 8.0, type: 'work',
+        note: 'Lost in (16 Std. gearbeitet, 8 Std. ÜS)'
+      },
+      '2026-05-09': {
+        date: '2026-05-09', mode: 'times', start: '14:00', end: '07:00', isOvernight: true, breakMin: 0,
+        workedHours: 17.0, targetHours: 8.0, overrideDiff: 9.0, type: 'work',
+        note: '5vorZwölf (17 Std. gearbeitet, 9 Std. ÜS)'
+      },
+      '2026-05-15': {
+        date: '2026-05-15', mode: 'times', start: '19:00', end: '02:00', isOvernight: true, breakMin: 0,
+        workedHours: 7.0, targetHours: 0.0, overrideDiff: 7.0, type: 'work',
+        note: 'Frida Ludwig - Sicherheitsschulung (voll als ÜS: 7 Std.)'
+      },
+      '2026-05-23': {
+        date: '2026-05-23', mode: 'times', start: '10:00', end: '21:00', isOvernight: false, breakMin: 0,
+        workedHours: 11.0, targetHours: 8.0, overrideDiff: 3.0, type: 'work',
+        note: 'Breakdance (11 Std. gearbeitet, 3 Std. ÜS)'
+      },
+      '2026-05-30': {
+        date: '2026-05-30', mode: 'times', start: '18:00', end: '07:00', isOvernight: true, breakMin: 0,
+        workedHours: 13.0, targetHours: 8.0, overrideDiff: 5.0, type: 'work',
+        note: 'Trance until you Dance (13 Std. gearbeitet, 5 Std. ÜS)'
+      },
+      '2026-06-06': {
+        date: '2026-06-06', mode: 'times', start: '10:00', end: '05:00', isOvernight: true, breakMin: 0,
+        workedHours: 19.0, targetHours: 13.0, overrideDiff: 6.0, type: 'work',
+        note: 'H2H Samstag (19 Std. gearbeitet, 6 Std. ÜS)'
+      },
+      '2026-06-13': {
+        date: '2026-06-13', mode: 'times', start: '09:00', end: '02:00', isOvernight: true, breakMin: 0,
+        workedHours: 17.0, targetHours: 11.0, overrideDiff: 6.0, type: 'work',
+        note: 'MAM Samstag (17 Std. gearbeitet, 6 Std. ÜS)'
+      },
+      '2026-06-19': {
+        date: '2026-06-19', mode: 'times', start: '09:00', end: '02:00', isOvernight: true, breakMin: 0,
+        workedHours: 17.0, targetHours: 9.0, overrideDiff: 8.0, type: 'work',
+        note: 'Mellowjam Freitag (17 Std. gearbeitet, 8 Std. ÜS)'
+      },
+      '2026-06-20': {
+        date: '2026-06-20', mode: 'times', start: '12:00', end: '03:00', isOvernight: true, breakMin: 0,
+        workedHours: 15.0, targetHours: 0.0, overrideDiff: 15.0, type: 'work',
+        note: 'Samstag (Mellowjam) (15 Std. voll als ÜS)'
+      },
+      '2026-06-27': {
+        date: '2026-06-27', mode: 'times', start: '12:00', end: '01:00', isOvernight: true, breakMin: 0,
+        workedHours: 13.0, targetHours: 10.0, overrideDiff: 3.0, type: 'work',
+        note: 'Hoodnews (13 Std. gearbeitet, 3 Std. ÜS)'
+      },
+      '2026-08-09': {
+        date: '2026-08-09', mode: 'times', start: '10:00', end: '23:00', isOvernight: false, breakMin: 0,
+        workedHours: 13.0, targetHours: 9.0, overrideDiff: 4.0, type: 'work',
+        note: 'Kabelbrand open air (13 Std. gearbeitet, 13-9=4 Std. ÜS)'
+      },
+      '2026-08-22': {
+        date: '2026-08-22', mode: 'times', start: '10:00', end: '23:00', isOvernight: false, breakMin: 0,
+        workedHours: 13.0, targetHours: 9.0, overrideDiff: 4.0, type: 'work',
+        note: 'Lost in open air (13 Std. gearbeitet, 13-9=4 Std. ÜS)'
+      },
+      '2026-09-11': {
+        date: '2026-09-11', mode: 'times', start: '14:00', end: '01:00', isOvernight: true, breakMin: 0,
+        workedHours: 11.0, targetHours: 9.0, overrideDiff: 2.0, type: 'work',
+        note: 'JDK (11 Std. gearbeitet, 11-9=2 Std. ÜS)'
+      },
+      '2026-09-12': {
+        date: '2026-09-12', mode: 'times', start: '10:00', end: '00:00', isOvernight: false, breakMin: 0,
+        workedHours: 14.0, targetHours: 9.0, overrideDiff: 5.0, type: 'work',
+        note: 'Modeselektor (14 Std. gearbeitet, 14-9=5 Std. ÜS)'
+      },
+      '2026-09-19': {
+        date: '2026-09-19', mode: 'times', start: '08:00', end: '22:00', isOvernight: false, breakMin: 0,
+        workedHours: 14.0, targetHours: 9.0, overrideDiff: 5.0, type: 'work',
+        note: 'TDH (14 Std. gearbeitet, 14-9=5 Std. ÜS)'
+      },
+      '2026-09-28': {
+        date: '2026-09-28', mode: 'times', start: '11:00', end: '04:00', isOvernight: true, breakMin: 0,
+        workedHours: 17.0, targetHours: 9.0, overrideDiff: 8.0, type: 'work',
+        note: 'Misbehave (17 Std. gearbeitet, 17-9=8 Std. ÜS)'
+      },
+      '2026-07-10': {
+        date: '2026-07-10', mode: 'direct', directHours: 0, workedHours: 0, targetHours: 16.0,
+        type: 'reduction', note: 'Freizeitausgleich: Fahrradtour (-16.0 Std. Abbau)'
+      },
+      '2026-07-24': {
+        date: '2026-07-24', mode: 'direct', directHours: 0, workedHours: 0, targetHours: 10.0,
+        type: 'reduction', note: 'Freizeitausgleich: Früher gehen (-10.0 Std. Abbau)'
+      }
+    };
+
+    function loadConfig() {
+      const saved = localStorage.getItem(STORAGE_KEY_CONFIG);
+      if (saved) {
+        try {
+          return { ...defaultConfig, ...JSON.parse(saved) };
+        } catch (e) {
+          console.error("Config Load Error", e);
+        }
+      }
+      return JSON.parse(JSON.stringify(defaultConfig));
+    }
+
+    function saveConfig() {
+      localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(appConfig));
+    }
+
+    function loadEntries() {
+      const saved = localStorage.getItem(STORAGE_KEY_ENTRIES);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error("Entries Load Error", e);
+        }
+      }
+      return JSON.parse(JSON.stringify(initialPdfEntries));
+    }
+
+    function saveEntries() {
+      localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries));
+    }
+
+    let appConfig = loadConfig();
+    let entries = loadEntries();
+
+    let currentDate = new Date(2026, 7, 1); // Start view August 2026
+    let selectedDateKey = null;
+    let currentModalType = 'work';
+    let currentModalMode = 'times';
+
+    /* ----------------------------------------------------
+       DATE & TIME UTILITIES
+    ---------------------------------------------------- */
+    function formatDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function parseDateKey(key) {
+      const parts = key.split('-');
+      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+
+    function formatHours(val) {
+      if (isNaN(val) || val === null || val === undefined) return '0.0h';
+      const num = Number(val);
+      const sign = num > 0 ? '+' : '';
+      return `${sign}${num.toFixed(1)}h`;
+    }
+
+    function getActiveModelForDate(dateStr) {
+      const sorted = [...appConfig.models].sort((a, b) => (a.validFrom > b.validFrom ? 1 : -1));
+      let active = sorted[0];
+      for (const m of sorted) {
+        if (dateStr >= m.validFrom) {
+          active = m;
+        }
+      }
+      return active;
+    }
+
+    function getTargetHoursForDate(dateStr) {
+      const model = getActiveModelForDate(dateStr);
+      const d = parseDateKey(dateStr);
+      const dayOfWeek = d.getDay(); // 0 = So, 1 = Mo ...
+      return Number(model.targets[dayOfWeek] || 0.0);
+    }
+
+    /* ----------------------------------------------------
+       OVERTIME CALCULATION LOGIC
+    ---------------------------------------------------- */
+    function calculateDailyOvertimeDiff(workedHours, targetHours, type, entryObj) {
+      if (entryObj && entryObj.overrideDiff !== undefined) {
+        return Number(entryObj.overrideDiff);
+      }
+      if (type === 'vacation' || type === 'sick' || type === 'holiday' || type === 'off') {
+        return 0;
+      }
+      if (type === 'reduction') {
+        return -targetHours;
+      }
+      if (!appConfig.thresholdEnabled) {
+        return workedHours - targetHours;
+      }
+
+      const threshold = Number(appConfig.thresholdHours || 9.0);
+      if (workedHours > threshold) {
+        return workedHours - threshold;
+      } else if (workedHours < targetHours) {
+        return workedHours - targetHours;
+      } else {
+        return 0;
+      }
+    }
+
+    /* ----------------------------------------------------
+       CALENDAR RENDERING & NAVIGATION
+    ---------------------------------------------------- */
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      const monthNames = [
+        'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+        'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+      ];
+      document.getElementById('calendar-month-year').innerText = `${monthNames[month]} ${year}`;
+
+      const activeModel = getActiveModelForDate(`${year}-${String(month+1).padStart(2,'0')}-01`);
+      document.getElementById('calendar-subtitle').innerText = `${activeModel.name} (ab ${activeModel.validFrom})`;
+
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+      const totalDays = lastDayOfMonth.getDate();
+
+      let startingDay = firstDayOfMonth.getDay() - 1;
+      if (startingDay === -1) startingDay = 6;
+
+      const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+      for (let i = 0; i < startingDay; i++) {
+        const dayNum = prevMonthLastDay - startingDay + i + 1;
+        const div = document.createElement('div');
+        div.className = 'min-h-[52px] sm:min-h-[64px] p-1 rounded-xl bg-slate-950/30 border border-slate-900/60 opacity-30 flex flex-col justify-between';
+        div.innerHTML = `<span class="text-[10px] font-mono text-slate-500">${dayNum}</span>`;
+        grid.appendChild(div);
+      }
+
+      let monthWorkedSum = 0;
+      let monthTargetSum = 0;
+      let monthDiffSum = 0;
+
+      const todayStr = formatDateKey(new Date());
+
+      for (let day = 1; day <= totalDays; day++) {
+        const dateObj = new Date(year, month, day);
+        const dateKey = formatDateKey(dateObj);
+        const entry = entries[dateKey];
+        const defaultTarget = getTargetHoursForDate(dateKey);
+
+        const dayCell = document.createElement('div');
+        dayCell.className = `min-h-[52px] sm:min-h-[64px] p-1 sm:p-1.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between active:scale-95 ${
+          dateKey === todayStr ? 'ring-2 ring-indigo-500 ring-offset-1 ring-offset-slate-950' : ''
+        }`;
+
+        let dayContent = `<div class="flex items-center justify-between"><span class="text-[11px] font-bold font-mono ${dateKey === todayStr ? 'text-indigo-400 font-extrabold' : 'text-slate-300'}">${day}</span>`;
+
+        if (entry) {
+          const effectiveTarget = Number(entry.targetHours !== undefined ? entry.targetHours : defaultTarget);
+          const worked = Number(entry.workedHours || 0);
+          const diff = calculateDailyOvertimeDiff(worked, effectiveTarget, entry.type, entry);
+
+          monthWorkedSum += (entry.type === 'work' ? worked : (entry.type === 'reduction' ? 0 : effectiveTarget));
+          monthTargetSum += effectiveTarget;
+          monthDiffSum += diff;
+
+          let badgeColor = 'bg-slate-800 text-slate-300 border-slate-700';
+          let borderTheme = 'border-slate-800 bg-slate-900/80';
+
+          if (diff > 0) {
+            badgeColor = 'bg-emerald-950/80 text-emerald-400 border-emerald-800/80';
+            borderTheme = 'border-emerald-800/50 bg-emerald-950/20';
+            dayContent += `<div class="flex items-center space-x-0.5">${entry.isOvernight ? '<span class="text-[9px]">🌙</span>' : ''}<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span></div></div>`;
+          } else if (diff < 0) {
+            badgeColor = 'bg-rose-950/80 text-rose-400 border-rose-800/80';
+            borderTheme = 'border-rose-900/50 bg-rose-950/20';
+            dayContent += `<div class="flex items-center space-x-0.5">${entry.isOvernight ? '<span class="text-[9px]">🌙</span>' : ''}<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span></div></div>`;
+          } else if (entry.type === 'vacation' || entry.type === 'sick') {
+            badgeColor = 'bg-amber-950/80 text-amber-300 border-amber-800/80';
+            borderTheme = 'border-amber-800/40 bg-amber-950/15';
+            dayContent += `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></div>`;
+          } else {
+            badgeColor = 'bg-indigo-950/80 text-indigo-300 border-indigo-800/80';
+            borderTheme = 'border-indigo-900/40 bg-indigo-950/20';
+            dayContent += `<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span></div>`;
+          }
+
+          dayCell.className += ` ${borderTheme}`;
+
+          dayContent += `
+            <div class="my-auto text-center">
+              <span class="text-[10px] font-mono block text-white font-semibold leading-none">${entry.type === 'work' ? worked.toFixed(1) + 'h' : (entry.type === 'reduction' ? 'Abbau' : entry.type.substring(0,3))}</span>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] px-1 py-0.2 rounded font-mono font-bold border ${badgeColor}">
+                ${diff !== 0 ? (diff > 0 ? '+' : '') + diff.toFixed(1) : '±0'}
+              </span>
+            </div>
+          `;
+        } else {
+          monthTargetSum += defaultTarget;
+          dayContent += `</div>`;
+          dayCell.className += ' bg-slate-900/40 border-slate-800/60 hover:border-slate-700';
+
+          if (defaultTarget > 0) {
+            dayContent += `
+              <div class="mt-auto text-right">
+                <span class="text-[9px] font-mono text-slate-500">${defaultTarget.toFixed(0)}h</span>
+              </div>
+            `;
+          }
+        }
+
+        dayCell.innerHTML = dayContent;
+        dayCell.onclick = () => selectDay(dateKey);
+        grid.appendChild(dayCell);
+      }
+
+      document.getElementById('kpi-month-worked').innerText = `${monthWorkedSum.toFixed(1)}h`;
+      document.getElementById('kpi-month-target').innerText = `Soll: ${monthTargetSum.toFixed(1)}h`;
+
+      const kpiMonthBal = document.getElementById('kpi-month-balance');
+      kpiMonthBal.innerText = formatHours(monthDiffSum);
+      kpiMonthBal.className = `text-base sm:text-lg font-bold font-mono my-0.5 ${monthDiffSum >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      updateTotalBalances();
+    }
+
+    function updateTotalBalances() {
+      let totalDiff = Number(appConfig.initialBalance || 0);
+      const currentYear = currentDate.getFullYear();
+      let yearDiff = 0;
+
+      for (const [key, entry] of Object.entries(entries)) {
+        const defaultTarget = getTargetHoursForDate(key);
+        const effectiveTarget = Number(entry.targetHours !== undefined ? entry.targetHours : defaultTarget);
+        const diff = calculateDailyOvertimeDiff(Number(entry.workedHours || 0), effectiveTarget, entry.type, entry);
+        
+        totalDiff += diff;
+
+        const entryYear = parseInt(key.substring(0, 4));
+        if (entryYear === currentYear) {
+          yearDiff += diff;
+        }
+      }
+
+      const headerBal = document.getElementById('header-total-balance');
+      headerBal.innerText = formatHours(totalDiff);
+      headerBal.className = `text-xs font-bold font-mono ${totalDiff >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      const yearKpi = document.getElementById('kpi-year-balance');
+      yearKpi.innerText = formatHours(yearDiff);
+      yearKpi.className = `text-base sm:text-lg font-bold font-mono ${yearDiff >= 0 ? 'text-indigo-400' : 'text-rose-400'}`;
+      document.getElementById('kpi-year-label').innerText = `Jahr ${currentYear}`;
+    }
+
+    function changeMonth(delta) {
+      currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + delta, 1);
+      renderCalendar();
+    }
+
+    function jumpToToday() {
+      currentDate = new Date();
+      renderCalendar();
+    }
+
+    /* ----------------------------------------------------
+       DAY ENTRY MODAL & OVERNIGHT LOGIC
+    ---------------------------------------------------- */
+    function selectDay(dateKey) {
+      selectedDateKey = dateKey;
+      const d = parseDateKey(dateKey);
+
+      const daysOfWeek = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+      document.getElementById('modal-date-display').innerText = `${daysOfWeek[d.getDay()]}, ${d.toLocaleDateString('de-DE')}`;
+      
+      const existing = entries[dateKey];
+      const defaultTarget = getTargetHoursForDate(dateKey);
+
+      if (existing) {
+        currentModalType = existing.type || 'work';
+        currentModalMode = existing.mode || 'times';
+        document.getElementById('input-start-time').value = existing.start || '08:00';
+        document.getElementById('input-end-time').value = existing.end || '17:00';
+        document.getElementById('input-break-min').value = existing.breakMin !== undefined ? existing.breakMin : 45;
+        document.getElementById('input-direct-hours').value = existing.workedHours || 8.0;
+        document.getElementById('input-entry-note').value = existing.note || '';
+        document.getElementById('btn-delete-entry').classList.remove('hidden');
+      } else {
+        currentModalType = defaultTarget > 0 ? 'work' : 'off';
+        currentModalMode = 'times';
+        document.getElementById('input-start-time').value = '08:00';
+        document.getElementById('input-end-time').value = defaultTarget === 8 ? '16:45' : '17:00';
+        document.getElementById('input-break-min').value = 45;
+        document.getElementById('input-direct-hours').value = defaultTarget;
+        document.getElementById('input-entry-note').value = '';
+        document.getElementById('btn-delete-entry').classList.add('hidden');
+      }
+
+      setEntryType(currentModalType);
+      setMode(currentModalMode);
+      calculateModalTimes();
+
+      const modal = document.getElementById('day-modal');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeDayModal() {
+      const modal = document.getElementById('day-modal');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function setEntryType(type) {
+      currentModalType = type;
+      const types = ['work', 'reduction', 'vacation', 'sick', 'holiday', 'off'];
+      types.forEach(t => {
+        const btn = document.getElementById(`type-btn-${t}`);
+        if (t === type) {
+          btn.className = 'py-2 px-1 rounded-xl border border-indigo-500 bg-indigo-600/30 text-white font-bold text-center';
+        } else {
+          btn.className = 'py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 font-medium text-center';
+        }
+      });
+
+      const workFields = document.getElementById('work-input-fields');
+      if (type === 'off') {
+        workFields.classList.add('hidden');
+      } else {
+        workFields.classList.remove('hidden');
+      }
+
+      calculateModalTimes();
+    }
+
+    function setMode(mode) {
+      currentModalMode = mode;
+      const btnTimes = document.getElementById('mode-btn-times');
+      const btnDirect = document.getElementById('mode-btn-direct');
+      const secTimes = document.getElementById('section-mode-times');
+      const secDirect = document.getElementById('section-mode-direct');
+
+      if (mode === 'times') {
+        btnTimes.className = 'flex-1 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold';
+        btnDirect.className = 'flex-1 py-1.5 rounded-lg text-slate-400 font-medium';
+        secTimes.classList.remove('hidden');
+        secDirect.classList.add('hidden');
+      } else {
+        btnDirect.className = 'flex-1 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold';
+        btnTimes.className = 'flex-1 py-1.5 rounded-lg text-slate-400 font-medium';
+        secTimes.classList.add('hidden');
+        secDirect.classList.remove('hidden');
+      }
+      calculateModalTimes();
+    }
+
+    function setBreakQuick(mins) {
+      document.getElementById('input-break-min').value = mins;
+      calculateModalTimes();
+    }
+
+    function calculateModalTimes() {
+      if (!selectedDateKey) return;
+      const defaultTarget = getTargetHoursForDate(selectedDateKey);
+      let worked = 0;
+      let isOvernight = false;
+
+      const badgeOvernight = document.getElementById('badge-overnight');
+
+      if (currentModalType === 'work' || currentModalType === 'reduction') {
+        if (currentModalMode === 'times') {
+          const start = document.getElementById('input-start-time').value;
+          const end = document.getElementById('input-end-time').value;
+          const breakMin = Number(document.getElementById('input-break-min').value || 0);
+
+          if (start && end) {
+            const [sH, sM] = start.split(':').map(Number);
+            const [eH, eM] = end.split(':').map(Number);
+            let diffMin = (eH * 60 + eM) - (sH * 60 + sM);
+            
+            // Wenn Ende kleiner oder gleich Beginn ist -> Über Mitternacht in den Folgetag!
+            if (diffMin <= 0) {
+              diffMin += 24 * 60;
+              isOvernight = true;
+            }
+
+            diffMin -= breakMin;
+            if (diffMin < 0) diffMin = 0;
+            worked = diffMin / 60;
+          }
+        } else {
+          worked = Number(document.getElementById('input-direct-hours').value || 0);
+        }
+      } else if (currentModalType === 'vacation' || currentModalType === 'sick' || currentModalType === 'holiday') {
+        worked = defaultTarget;
+      } else {
+        worked = 0;
+      }
+
+      // Folgetag-Badge anzeigen / verbergen
+      if (isOvernight && currentModalMode === 'times') {
+        badgeOvernight.classList.remove('hidden');
+      } else {
+        badgeOvernight.classList.add('hidden');
+      }
+
+      document.getElementById('modal-calc-worked').innerText = `${worked.toFixed(2)} Std.`;
+      document.getElementById('modal-calc-target').innerText = `${defaultTarget.toFixed(2)} Std.`;
+
+      const diff = calculateDailyOvertimeDiff(worked, defaultTarget, currentModalType, null);
+      const diffElem = document.getElementById('modal-calc-overtime');
+      diffElem.innerText = `${diff > 0 ? '+' : ''}${diff.toFixed(2)} Std.`;
+      diffElem.className = `font-mono font-bold text-sm ${diff > 0 ? 'text-emerald-400' : (diff < 0 ? 'text-rose-400' : 'text-slate-300')}`;
+
+      const infoElem = document.getElementById('modal-calc-info');
+      const badgeRule = document.getElementById('modal-badge-rule');
+
+      if (currentModalType === 'reduction') {
+        badgeRule.innerText = 'Freizeitausgleich';
+        infoElem.innerText = `Überstundenabbau: Zieht ${defaultTarget.toFixed(1)} Std. vom Überstundenkonto ab.`;
+      } else if (appConfig.thresholdEnabled) {
+        badgeRule.innerText = `ab ${appConfig.thresholdHours}h`;
+        let nightText = isOvernight ? ' (Nachtschicht über Mitternacht)' : '';
+        if (worked > appConfig.thresholdHours) {
+          infoElem.innerText = `Schwelle erreicht: ${worked.toFixed(1)}h gearbeitet${nightText} - ${appConfig.thresholdHours}h Schwelle = +${diff.toFixed(2)}h Überstunden.`;
+        } else if (worked < defaultTarget) {
+          infoElem.innerText = `Soll unterschritten: Fehlen ${(defaultTarget - worked).toFixed(2)}h zur Erfüllung des Tagessolls.`;
+        } else {
+          infoElem.innerText = `Tagessoll erfüllt. Überstunden entstehen erst ab ${appConfig.thresholdHours}h Arbeitszeit.`;
+        }
+      } else {
+        badgeRule.innerText = 'Standard';
+        infoElem.innerText = 'Standardberechnung: Differenz aus Ist- und Sollstunden.';
+      }
+    }
+
+    function saveDayModal() {
+      if (!selectedDateKey) return;
+      const defaultTarget = getTargetHoursForDate(selectedDateKey);
+
+      let worked = 0;
+      let start = null;
+      let end = null;
+      let breakMin = 0;
+      let isOvernight = false;
+
+      if (currentModalType === 'work' || currentModalType === 'reduction') {
+        if (currentModalMode === 'times') {
+          start = document.getElementById('input-start-time').value;
+          end = document.getElementById('input-end-time').value;
+          breakMin = Number(document.getElementById('input-break-min').value || 0);
+          if (start && end) {
+            const [sH, sM] = start.split(':').map(Number);
+            const [eH, eM] = end.split(':').map(Number);
+            let diffMin = (eH * 60 + eM) - (sH * 60 + sM);
+            if (diffMin <= 0) {
+              diffMin += 24 * 60;
+              isOvernight = true;
+            }
+            diffMin -= breakMin;
+            if (diffMin < 0) diffMin = 0;
+            worked = diffMin / 60;
+          }
+        } else {
+          worked = Number(document.getElementById('input-direct-hours').value || 0);
+        }
+      } else if (currentModalType === 'vacation' || currentModalType === 'sick' || currentModalType === 'holiday') {
+        worked = defaultTarget;
+      }
+
+      const note = document.getElementById('input-entry-note').value.trim();
+
+      entries[selectedDateKey] = {
+        date: selectedDateKey,
+        type: currentModalType,
+        mode: currentModalMode,
+        start,
+        end,
+        isOvernight,
+        breakMin,
+        workedHours: worked,
+        targetHours: defaultTarget,
+        note
+      };
+
+      saveEntries();
+      closeDayModal();
+      renderCalendar();
+    }
+
+    function deleteEntryCurrentDay() {
+      if (selectedDateKey && entries[selectedDateKey]) {
+        delete entries[selectedDateKey];
+        saveEntries();
+        closeDayModal();
+        renderCalendar();
+      }
+    }
+
+    /* ----------------------------------------------------
+       CONFIG & MODEL MANAGEMENT
+    ---------------------------------------------------- */
+    function openConfigModal() {
+      document.getElementById('cfg-employee-name').value = appConfig.employeeName || '';
+      document.getElementById('cfg-employee-id').value = appConfig.employeeId || '';
+      document.getElementById('cfg-threshold-enabled').checked = !!appConfig.thresholdEnabled;
+      document.getElementById('cfg-threshold-hours').value = appConfig.thresholdHours || 9.0;
+      document.getElementById('cfg-initial-balance').value = appConfig.initialBalance || 12.0;
+
+      renderConfigModelsList();
+
+      const modal = document.getElementById('config-modal');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeConfigModal() {
+      const modal = document.getElementById('config-modal');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function renderConfigModelsList() {
+      const container = document.getElementById('models-list-container');
+      container.innerHTML = '';
+
+      appConfig.models.forEach((m, idx) => {
+        const div = document.createElement('div');
+        div.className = 'bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2';
+
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <input type="text" value="${m.name}" id="model-name-${idx}" class="bg-transparent font-bold text-white text-xs border-b border-transparent hover:border-slate-700 focus:border-indigo-500 outline-none w-3/5" />
+            <div class="flex items-center space-x-1">
+              <span class="text-[10px] text-slate-400">Gültig ab:</span>
+              <input type="date" value="${m.validFrom}" id="model-from-${idx}" class="bg-slate-950 border border-slate-800 rounded px-1 text-[11px] text-white" />
+            </div>
+          </div>
+          <div class="grid grid-cols-7 gap-1 text-center text-[10px]">
+            <div><span class="text-slate-500 block">Mo</span><input type="number" step="0.5" id="model-${idx}-d1" value="${m.targets[1] || 0}" class="w-full bg-slate-950 border border-slate-800 rounded text-center text-white p-0.5"></div>
+            <div><span class="text-slate-500 block">Di</span><input type="number" step="0.5" id="model-${idx}-d2" value="${m.targets[2] || 0}" class="w-full bg-slate-950 border border-slate-800 rounded text-center text-white p-0.5"></div>
+            <div><span class="text-slate-500 block">Mi</span><input type="number" step="0.5" id="model-${idx}-d3" value="${m.targets[3] || 0}" class="w-full bg-slate-950 border border-slate-800 rounded text-center text-white p-0.5"></div>
+            <div><span class="text-slate-500 block">Do</span><input type="number" step="0.5" id="model-${idx}-d4" value="${m.targets[4] || 0}" class="w-full bg-slate-950 border border-slate-800 rounded text-center text-white p-0.5"></div>
+            <div><span class="text-slate-500 block">Fr</span><input type="number" step="0.5" id="model-${idx}-d5" value="${m.targets[5] || 0}" class="w-full bg-slate-950 border border-slate-800 rounded text-center text-white p-0.5"></div>
+            <div><span class="text-slate-500 block">Sa</span><input type="number" step="0.5" id="model-${idx}-d6" value="${m.targets[6] || 0}" class="w-full bg-slate-950 border border-slate-800 rounded text-center text-white p-0.5"></div>
+            <div><span class="text-slate-500 block">So</span><input type="number" step="0.5" id="model-${idx}-d0" value="${m.targets[0] || 0}" class="w-full bg-slate-950 border border-slate-800 rounded text-center text-white p-0.5"></div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addCustomModel() {
+      appConfig.models.push({
+        id: 'model-' + Date.now(),
+        name: 'Neues Modell',
+        validFrom: '2027-01-01',
+        targets: { 1: 8.0, 2: 8.0, 3: 8.0, 4: 8.0, 5: 8.0, 6: 0.0, 0: 0.0 }
+      });
+      renderConfigModelsList();
+    }
+
+    function saveConfigModal() {
+      appConfig.employeeName = document.getElementById('cfg-employee-name').value.trim();
+      appConfig.employeeId = document.getElementById('cfg-employee-id').value.trim();
+      appConfig.thresholdEnabled = document.getElementById('cfg-threshold-enabled').checked;
+      appConfig.thresholdHours = Number(document.getElementById('cfg-threshold-hours').value || 9.0);
+      appConfig.initialBalance = Number(document.getElementById('cfg-initial-balance').value || 0.0);
+
+      appConfig.models.forEach((m, idx) => {
+        m.name = document.getElementById(`model-name-${idx}`).value.trim() || 'Modell';
+        m.validFrom = document.getElementById(`model-from-${idx}`).value || '2026-01-01';
+        m.targets = {
+          1: Number(document.getElementById(`model-${idx}-d1`).value || 0),
+          2: Number(document.getElementById(`model-${idx}-d2`).value || 0),
+          3: Number(document.getElementById(`model-${idx}-d3`).value || 0),
+          4: Number(document.getElementById(`model-${idx}-d4`).value || 0),
+          5: Number(document.getElementById(`model-${idx}-d5`).value || 0),
+          6: Number(document.getElementById(`model-${idx}-d6`).value || 0),
+          0: Number(document.getElementById(`model-${idx}-d0`).value || 0),
+        };
+      });
+
+      saveConfig();
+      closeConfigModal();
+      renderCalendar();
+    }
+
+    /* ----------------------------------------------------
+       EVENTS / PDF OVERVIEW LIST MODAL
+    ---------------------------------------------------- */
+    function openEventsListModal() {
+      const container = document.getElementById('pdf-events-list');
+      container.innerHTML = '';
+
+      const keys = Object.keys(entries).sort();
+      keys.forEach(k => {
+        const item = entries[k];
+        const d = parseDateKey(k);
+        const diff = calculateDailyOvertimeDiff(Number(item.workedHours || 0), Number(item.targetHours || 0), item.type, item);
+        const diffText = formatHours(diff);
+        const diffClass = diff > 0 ? 'text-emerald-400' : (diff < 0 ? 'text-rose-400' : 'text-slate-400');
+
+        const div = document.createElement('div');
+        div.className = 'bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between hover:border-indigo-500/50 cursor-pointer transition';
+        div.onclick = () => {
+          closeEventsListModal();
+          currentDate = new Date(d.getFullYear(), d.getMonth(), 1);
+          renderCalendar();
+          selectDay(k);
+        };
+
+        div.innerHTML = `
+          <div class="space-y-0.5">
+            <div class="flex items-center space-x-2">
+              <span class="font-mono text-indigo-400 font-semibold">${d.toLocaleDateString('de-DE')}</span>
+              <span class="font-bold text-white">${item.note ? item.note.split('(')[0] : 'Einsatz'}</span>
+              ${item.isOvernight ? '<span class="text-[9px] bg-violet-950 text-violet-300 border border-violet-800 px-1 rounded">🌙 Nacht</span>' : ''}
+            </div>
+            <p class="text-[11px] text-slate-400">${item.start && item.end ? `${item.start} - ${item.end} Uhr ${item.isOvernight ? '(Folgetag)' : ''} (${item.workedHours}h)` : (item.type === 'reduction' ? 'Überstundenabbau' : '')} ${item.note ? '• ' + item.note : ''}</p>
+          </div>
+          <div class="text-right">
+            <span class="font-mono font-bold text-xs ${diffClass}">${diffText}</span>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      const modal = document.getElementById('events-modal');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      lucide.createIcons();
+    }
+
+    function closeEventsListModal() {
+      const modal = document.getElementById('events-modal');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    /* ----------------------------------------------------
+       MONTHLY REPORT / PDF EXPORT PREVIEW
+    ---------------------------------------------------- */
+    function openReportModal() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      const monthNames = [
+        'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+        'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+      ];
+      const monthTitle = `${monthNames[month]} ${year}`;
+
+      document.getElementById('report-month-heading').innerText = monthTitle;
+      document.getElementById('print-month-title').innerText = `Monat: ${monthTitle}`;
+      document.getElementById('print-emp-name').innerText = `Mitarbeiter: ${appConfig.employeeName || 'Max Mustermann'}`;
+      document.getElementById('print-emp-id').innerText = `Personalnr: ${appConfig.employeeId || '1042'}`;
+      document.getElementById('print-created-date').innerText = `Erstellt am: ${new Date().toLocaleDateString('de-DE')}`;
+
+      const tbody = document.getElementById('print-table-body');
+      tbody.innerHTML = '';
+
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      let totalMonthTarget = 0;
+      let totalMonthWorked = 0;
+      let totalMonthDiff = 0;
+
+      const dayNamesShort = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+      for (let day = 1; day <= lastDay; day++) {
+        const dObj = new Date(year, month, day);
+        const key = formatDateKey(dObj);
+        const entry = entries[key];
+        const defaultTarget = getTargetHoursForDate(key);
+
+        const row = document.createElement('tr');
+        row.className = dObj.getDay() === 0 || dObj.getDay() === 6 ? 'bg-slate-50/50' : '';
+
+        let typeLabel = 'Arbeit';
+        let timeRange = '-';
+        let breakText = '-';
+        let workedH = 0;
+        let targetH = defaultTarget;
+        let diff = 0;
+        let note = '';
+
+        if (entry) {
+          typeLabel = entry.type === 'work' ? 'Arbeit' :
+                      (entry.type === 'reduction' ? 'Zeitausgleich' :
+                      (entry.type === 'vacation' ? 'Urlaub' :
+                      (entry.type === 'sick' ? 'Krank' :
+                      (entry.type === 'holiday' ? 'Feiertag' : 'Frei'))));
+
+          if (entry.start && entry.end) {
+            timeRange = `${entry.start} - ${entry.end}${entry.isOvernight ? ' (+1)' : ''}`;
+          }
+          if (entry.breakMin) {
+            breakText = `${entry.breakMin}m`;
+          }
+
+          workedH = Number(entry.workedHours || 0);
+          targetH = Number(entry.targetHours !== undefined ? entry.targetHours : defaultTarget);
+          diff = calculateDailyOvertimeDiff(workedH, targetH, entry.type, entry);
+          note = entry.note || '';
+
+          totalMonthWorked += (entry.type === 'work' ? workedH : (entry.type === 'reduction' ? 0 : targetH));
+          totalMonthTarget += targetH;
+          totalMonthDiff += diff;
+        } else {
+          totalMonthTarget += defaultTarget;
+          diff = -defaultTarget;
+        }
+
+        row.innerHTML = `
+          <td class="py-1.5 px-2 font-mono font-medium">${String(day).padStart(2,'0')}. (${dayNamesShort[dObj.getDay()]})</td>
+          <td class="py-1.5 px-2">${typeLabel}</td>
+          <td class="py-1.5 px-2 font-mono">${timeRange}</td>
+          <td class="py-1.5 px-2 text-right font-mono">${breakText}</td>
+          <td class="py-1.5 px-2 text-right font-mono font-semibold">${workedH > 0 ? workedH.toFixed(2) : '-'}</td>
+          <td class="py-1.5 px-2 text-right font-mono text-slate-500">${targetH > 0 ? targetH.toFixed(2) : '-'}</td>
+          <td class="py-1.5 px-2 text-right font-mono font-bold ${diff > 0 ? 'text-emerald-700' : (diff < 0 ? 'text-rose-700' : 'text-slate-600')}">
+            ${diff !== 0 ? (diff > 0 ? '+' : '') + diff.toFixed(2) : '0.00'}
+          </td>
+          <td class="py-1.5 px-2 text-[10px] text-slate-600">${note}</td>
+        `;
+
+        tbody.appendChild(row);
+      }
+
+      document.getElementById('print-summary-target').innerText = `${totalMonthTarget.toFixed(2)} h`;
+      document.getElementById('print-summary-worked').innerText = `${totalMonthWorked.toFixed(2)} h`;
+      document.getElementById('print-summary-month-diff').innerText = `${totalMonthDiff >= 0 ? '+' : ''}${totalMonthDiff.toFixed(2)} h`;
+
+      let overallBalance = Number(appConfig.initialBalance || 0);
+      for (const [k, e] of Object.entries(entries)) {
+        const t = Number(e.targetHours !== undefined ? e.targetHours : getTargetHoursForDate(k));
+        overallBalance += calculateDailyOvertimeDiff(Number(e.workedHours || 0), t, e.type, e);
+      }
+      document.getElementById('print-summary-total-balance').innerText = `${overallBalance >= 0 ? '+' : ''}${overallBalance.toFixed(2)} h`;
+
+      const modal = document.getElementById('report-modal');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeReportModal() {
+      const modal = document.getElementById('report-modal');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function shareReport() {
+      const monthText = document.getElementById('print-month-title').innerText;
+      const target = document.getElementById('print-summary-target').innerText;
+      const worked = document.getElementById('print-summary-worked').innerText;
+      const diff = document.getElementById('print-summary-month-diff').innerText;
+      const total = document.getElementById('print-summary-total-balance').innerText;
+
+      const summary = `📊 ${monthText}\n👤 ${appConfig.employeeName}\n\n• Soll: ${target}\n• Ist: ${worked}\n• Monats-Saldo: ${diff}\n• Gesamtstand: ${total}\n\nErfasst mit WorkPulse App.`;
+
+      if (navigator.share) {
+        navigator.share({
+          title: 'Monatsstundennachweis',
+          text: summary
+        }).catch(() => {});
+      } else {
+        const dummy = document.createElement('textarea');
+        dummy.value = summary;
+        document.body.appendChild(dummy);
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+        const info = document.createElement('div');
+        info.className = 'fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-white px-4 py-2 rounded-xl text-xs z-50 shadow-2xl';
+        info.innerText = 'Zusammenfassung in die Zwischenablage kopiert!';
+        document.body.appendChild(info);
+        setTimeout(() => info.remove(), 2500);
+      }
+    }
+
+    /* ----------------------------------------------------
+       BACKUP (JSON) & CSV EXPORT
+    ---------------------------------------------------- */
+    function downloadBackupJSON() {
+      const data = {
+        config: appConfig,
+        entries: entries,
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `workpulse_backup_${formatDateKey(new Date())}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importBackupJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.config && imported.entries) {
+            appConfig = imported.config;
+            entries = imported.entries;
+            saveConfig();
+            saveEntries();
+            renderCalendar();
+            closeConfigModal();
+          }
+        } catch (err) {
+          console.error("Import failed", err);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function exportCSV() {
+      let csv = 'Datum;Wochentag;Kategorie;Von;Bis;Nachtschicht;PauseMin;IstStunden;SollStunden;SaldoStunden;Notiz\n';
+      const keys = Object.keys(entries).sort();
+      keys.forEach(k => {
+        const e = entries[k];
+        const d = parseDateKey(k);
+        const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+        const defTarget = getTargetHoursForDate(k);
+        const target = Number(e.targetHours !== undefined ? e.targetHours : defTarget);
+        const diff = calculateDailyOvertimeDiff(Number(e.workedHours || 0), target, e.type, e);
+
+        csv += `${k};${dayNames[d.getDay()]};${e.type};${e.start || ''};${e.end || ''};${e.isOvernight ? 'Ja' : 'Nein'};${e.breakMin || 0};${(e.workedHours || 0).toString().replace('.', ',')};${target.toString().replace('.', ',')};${diff.toString().replace('.', ',')};"${(e.note || '').replace(/"/g, '""')}"\n`;
+      });
+
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `arbeitszeiten_ueberstunden_${formatDateKey(new Date())}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      renderCalendar();
+    });
+  </script>
+</body>
+</html>
