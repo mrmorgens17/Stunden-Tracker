@@ -152,9 +152,9 @@
         <span class="text-[9px] text-slate-500">Konto</span>
       </div>
 
-      <!-- Urlaubskonto -->
-      <div onclick="openVacationOverview()" class="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-2 text-center flex flex-col justify-between shadow-sm cursor-pointer hover:border-amber-400 transition">
-        <span class="text-[9px] font-semibold text-amber-400 uppercase tracking-wider flex items-center justify-center gap-0.5">
+      <!-- Urlaubskonto (Klick öffnet Schnelleinstellung) -->
+      <div onclick="openVacationModal()" class="bg-slate-900/90 border border-amber-500/40 hover:border-amber-400 rounded-2xl p-2 text-center flex flex-col justify-between shadow-sm cursor-pointer transition active:scale-95 group">
+        <span class="text-[9px] font-semibold text-amber-400 uppercase tracking-wider flex items-center justify-center gap-0.5 group-hover:text-amber-300">
           <span>🌴</span> Urlaub
         </span>
         <div id="kpi-vacation-remaining" class="text-sm sm:text-base font-bold font-mono text-amber-300 my-0.5">30 d</div>
@@ -406,6 +406,81 @@
         </button>
         <button type="button" onclick="saveDayModal()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-bold shadow-lg shadow-indigo-600/30">
           Speichern
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ==========================================
+       VACATION QUICK-SETTINGS MODAL
+  =========================================== -->
+  <div id="vacation-quick-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center text-base">
+            🌴
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-white">Urlaubsanspruch anpassen</h3>
+            <span class="text-[10px] text-amber-300/80">Wähle oder tippe deine Tage ein</span>
+          </div>
+        </div>
+        <button onclick="closeVacationModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Schnellauswahl Buttons (28 Tage, 30 Tage etc.) -->
+      <div class="space-y-1.5">
+        <label class="text-[11px] font-semibold text-slate-400 block">Schnellauswahl Jahresurlaub</label>
+        <div class="grid grid-cols-4 gap-1.5">
+          <button type="button" onclick="setVacationDirect(25)" class="py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500 text-slate-200 hover:text-amber-300 font-mono text-xs font-bold transition">25 d</button>
+          <button type="button" onclick="setVacationDirect(28)" class="py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500 text-slate-200 hover:text-amber-300 font-mono text-xs font-bold transition">28 d</button>
+          <button type="button" onclick="setVacationDirect(30)" class="py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500 text-slate-200 hover:text-amber-300 font-mono text-xs font-bold transition">30 d</button>
+          <button type="button" onclick="setVacationDirect(32)" class="py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500 text-slate-200 hover:text-amber-300 font-mono text-xs font-bold transition">32 d</button>
+        </div>
+      </div>
+
+      <!-- Manuelle Eingabe -->
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <div class="bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
+          <label class="text-[10px] text-slate-400 block mb-1">Jahresurlaub</label>
+          <div class="flex items-center space-x-1">
+            <input type="number" id="quick-vacation-total" min="0" max="60" step="0.5" class="w-full bg-slate-900 border border-amber-500/40 rounded-xl px-2 py-1 text-center font-mono font-bold text-amber-300 text-base outline-none focus:border-amber-400" />
+            <span class="text-xs text-slate-400">Tage</span>
+          </div>
+        </div>
+        <div class="bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
+          <label class="text-[10px] text-slate-400 block mb-1">Rest Vorjahr</label>
+          <div class="flex items-center space-x-1">
+            <input type="number" id="quick-vacation-carryover" min="0" max="30" step="0.5" value="0" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2 py-1 text-center font-mono font-bold text-slate-200 text-base outline-none focus:border-indigo-500" />
+            <span class="text-xs text-slate-400">Tage</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live-Konto Übersicht -->
+      <div class="p-3 rounded-2xl bg-amber-950/20 border border-amber-800/40 text-xs text-amber-200 flex justify-between items-center font-mono">
+        <div>
+          <span class="text-[10px] text-slate-400 block font-sans">Bereits eingetragen</span>
+          <span id="quick-vacation-used-info" class="font-bold text-white">0 Tage</span>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] text-slate-400 block font-sans">Verbleibend</span>
+          <span id="quick-vacation-left-info" class="font-extrabold text-amber-300 text-sm">30 Tage</span>
+        </div>
+      </div>
+
+      <div class="flex space-x-2 pt-2 border-t border-slate-800">
+        <button onclick="closeVacationModal()" class="flex-1 py-2.5 rounded-xl border border-slate-800 bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700">
+          Abbrechen
+        </button>
+        <button onclick="saveVacationQuickModal()" class="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-lg shadow-amber-600/30">
+          Übernehmen
         </button>
       </div>
 
@@ -1151,9 +1226,49 @@
       renderCalendar();
     }
 
-    function openVacationOverview() {
+    /* ----------------------------------------------------
+       URLAUBSVERWALTUNG MODAL
+    ---------------------------------------------------- */
+    function openVacationModal() {
       const vac = getVacationStats();
-      alert(`🌴 Dein Urlaubskonto ${currentDate.getFullYear()}:\n\n• Gesamtanspruch: ${vac.total} Tage (inkl. Übertrag)\n• Genommen: ${vac.used} Tage\n• Verbleibend: ${vac.remaining} Tage\n\nDu kannst deinen Gesamturlaub jederzeit im Einstellungsmenü (⚙️) anpassen.`);
+      document.getElementById('quick-vacation-total').value = appConfig.vacationTotal !== undefined ? appConfig.vacationTotal : 30;
+      document.getElementById('quick-vacation-carryover').value = appConfig.vacationCarryover !== undefined ? appConfig.vacationCarryover : 0;
+      
+      updateQuickVacationLivePreview();
+
+      document.getElementById('quick-vacation-total').oninput = updateQuickVacationLivePreview;
+      document.getElementById('quick-vacation-carryover').oninput = updateQuickVacationLivePreview;
+
+      const modal = document.getElementById('vacation-quick-modal');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeVacationModal() {
+      const modal = document.getElementById('vacation-quick-modal');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function setVacationDirect(days) {
+      document.getElementById('quick-vacation-total').value = days;
+      updateQuickVacationLivePreview();
+    }
+
+    function updateQuickVacationLivePreview() {
+      const vac = getVacationStats();
+      const total = Number(document.getElementById('quick-vacation-total').value || 0);
+      const carry = Number(document.getElementById('quick-vacation-carryover').value || 0);
+      const remaining = (total + carry) - vac.used;
+
+      document.getElementById('quick-vacation-used-info').innerText = `${vac.used} Tage`;
+      document.getElementById('quick-vacation-left-info').innerText = `${remaining} Tage`;
+    }
+
+    function saveVacationQuickModal() {
+      appConfig.vacationTotal = Number(document.getElementById('quick-vacation-total').value || 30);
+      appConfig.vacationCarryover = Number(document.getElementById('quick-vacation-carryover').value || 0);
+      saveConfig();
+      closeVacationModal();
+      renderCalendar();
     }
 
     /* ----------------------------------------------------
