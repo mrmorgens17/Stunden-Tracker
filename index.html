@@ -56,7 +56,7 @@
       body {
         background-color: #ffffff !important;
         color: #000000 !important;
-        font-size: 11pt !important;
+        font-size: 10pt !important;
       }
       .no-print {
         display: none !important;
@@ -80,7 +80,7 @@
       }
       th, td {
         border: 1px solid #d1d5db !important;
-        padding: 5px 8px !important;
+        padding: 4px 6px !important;
         color: #111827 !important;
       }
       th {
@@ -115,7 +115,7 @@
       <!-- Action Icons: Gesamtstand, PDF & Config -->
       <div class="flex items-center space-x-1.5">
         <div class="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 flex items-center space-x-1.5">
-          <span class="text-[11px] text-slate-400">Gesamt:</span>
+          <span class="text-[11px] text-slate-400">ÜS:</span>
           <span id="header-total-balance" class="text-xs font-bold font-mono text-emerald-400">+84.0h</span>
         </div>
 
@@ -129,27 +129,36 @@
       </div>
     </header>
 
-    <!-- KPI Summary Cards -->
-    <section class="grid grid-cols-3 gap-2">
+    <!-- KPI Summary Cards (4 Spalten inkl. Urlaub) -->
+    <section class="grid grid-cols-4 gap-1.5">
       <!-- Monat Ist -->
-      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-2.5 text-center flex flex-col justify-between shadow-sm">
-        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Monat Ist</span>
-        <div id="kpi-month-worked" class="text-base sm:text-lg font-bold font-mono text-white my-0.5">0.0h</div>
-        <span id="kpi-month-target" class="text-[10px] text-slate-500">Soll: 0.0h</span>
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-2 text-center flex flex-col justify-between shadow-sm">
+        <span class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Monat</span>
+        <div id="kpi-month-worked" class="text-sm sm:text-base font-bold font-mono text-white my-0.5">0.0h</div>
+        <span id="kpi-month-target" class="text-[9px] text-slate-500 truncate">S: 0h</span>
       </div>
 
       <!-- Monat Saldo -->
-      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-2.5 text-center flex flex-col justify-between shadow-sm">
-        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Monat Saldo</span>
-        <div id="kpi-month-balance" class="text-base sm:text-lg font-bold font-mono text-emerald-400 my-0.5">±0.0h</div>
-        <span class="text-[10px] text-slate-500">Schwelle: 9h</span>
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-2 text-center flex flex-col justify-between shadow-sm">
+        <span class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Saldo</span>
+        <div id="kpi-month-balance" class="text-sm sm:text-base font-bold font-mono text-emerald-400 my-0.5">±0.0h</div>
+        <span class="text-[9px] text-slate-500">ab 9h</span>
       </div>
 
       <!-- Jahr Saldo -->
-      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-2.5 text-center flex flex-col justify-between shadow-sm">
-        <span id="kpi-year-label" class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Jahr 2026</span>
-        <div id="kpi-year-balance" class="text-base sm:text-lg font-bold font-mono text-indigo-400 my-0.5">+72.0h</div>
-        <span class="text-[10px] text-slate-500">Ausgleich inkl.</span>
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-2 text-center flex flex-col justify-between shadow-sm">
+        <span id="kpi-year-label" class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">2026</span>
+        <div id="kpi-year-balance" class="text-sm sm:text-base font-bold font-mono text-indigo-400 my-0.5">+72.0h</div>
+        <span class="text-[9px] text-slate-500">Konto</span>
+      </div>
+
+      <!-- Urlaubskonto -->
+      <div onclick="openVacationOverview()" class="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-2 text-center flex flex-col justify-between shadow-sm cursor-pointer hover:border-amber-400 transition">
+        <span class="text-[9px] font-semibold text-amber-400 uppercase tracking-wider flex items-center justify-center gap-0.5">
+          <span>🌴</span> Urlaub
+        </span>
+        <div id="kpi-vacation-remaining" class="text-sm sm:text-base font-bold font-mono text-amber-300 my-0.5">30 d</div>
+        <span id="kpi-vacation-used" class="text-[9px] text-slate-400">0 gen.</span>
       </div>
     </section>
 
@@ -196,22 +205,22 @@
     </div>
 
     <!-- Legend Indicator -->
-    <div class="flex items-center justify-around px-2 py-1 bg-slate-900/40 rounded-xl text-[10px] text-slate-400 border border-slate-800/40">
+    <div class="flex items-center justify-around px-2 py-1.5 bg-slate-900/40 rounded-xl text-[10px] text-slate-400 border border-slate-800/40">
       <div class="flex items-center space-x-1">
         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
         <span>Überstunden</span>
       </div>
       <div class="flex items-center space-x-1">
         <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-        <span>🌙 Nachtschicht</span>
+        <span>🌙 Nacht</span>
+      </div>
+      <div class="flex items-center space-x-1">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span>🌴 Urlaub</span>
       </div>
       <div class="flex items-center space-x-1">
         <span class="w-2 h-2 rounded-full bg-rose-500"></span>
         <span>Abbau</span>
-      </div>
-      <div class="flex items-center space-x-1">
-        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-        <span>Urlaub/Krank</span>
       </div>
     </div>
 
@@ -242,7 +251,7 @@
     <div class="flex items-center justify-between bg-slate-900/50 border border-slate-800/80 rounded-xl px-3 py-2 text-xs text-slate-400">
       <div class="flex items-center space-x-1.5">
         <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
-        <span>Gesamt: <strong class="text-emerald-400 font-mono">84.0h</strong> (12h Vorjahr + 72h 2026)</span>
+        <span>Gesamt: <strong class="text-emerald-400 font-mono">84.0h</strong> (12h 2025 + 72h 2026)</span>
       </div>
       <button onclick="exportCSV()" class="hover:text-white underline text-[11px] font-medium flex items-center gap-1">
         <i data-lucide="file-spreadsheet" class="w-3 h-3"></i> CSV
@@ -276,11 +285,11 @@
           <button type="button" onclick="setEntryType('work')" id="type-btn-work" class="py-2 px-1 rounded-xl border border-indigo-600 bg-indigo-600/20 text-white font-medium text-center">
             💼 Arbeit
           </button>
-          <button type="button" onclick="setEntryType('reduction')" id="type-btn-reduction" class="py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-300 font-medium text-center">
-            ⏳ Zeitausgleich
-          </button>
           <button type="button" onclick="setEntryType('vacation')" id="type-btn-vacation" class="py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-300 font-medium text-center">
             🌴 Urlaub
+          </button>
+          <button type="button" onclick="setEntryType('reduction')" id="type-btn-reduction" class="py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-300 font-medium text-center">
+            ⏳ Zeitausgleich
           </button>
           <button type="button" onclick="setEntryType('sick')" id="type-btn-sick" class="py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-300 font-medium text-center">
             🤒 Krank
@@ -292,6 +301,18 @@
             🛋️ Frei
           </button>
         </div>
+      </div>
+
+      <!-- Vacation Info Banner -->
+      <div id="vacation-info-banner" class="hidden mb-3 p-3 rounded-2xl bg-amber-950/40 border border-amber-800/50 text-xs text-amber-200 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🌴</span>
+          <div>
+            <span class="font-bold block">Urlaubstag buchen</span>
+            <span class="text-[11px] text-amber-300/80">Wird automatisch vom Jahresurlaubskonto abgezogen.</span>
+          </div>
+        </div>
+        <span id="modal-vacation-tag" class="px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-500/40 font-mono font-bold text-amber-300 text-[11px]">-1 Tag</span>
       </div>
 
       <!-- Work Time Input Section -->
@@ -371,8 +392,8 @@
 
       <!-- Description / Note -->
       <div class="mt-3">
-        <label class="text-[11px] text-slate-400 block mb-1">Einsatz / Notiz / Veranstaltung</label>
-        <input type="text" id="input-entry-note" placeholder="z. B. Samstag 22:00 bis 10:00 Uhr, Clubnacht, Festival..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-indigo-500 outline-none" />
+        <label class="text-[11px] text-slate-400 block mb-1">Einsatz / Notiz / Urlaubsbemerkung</label>
+        <input type="text" id="input-entry-note" placeholder="z. B. Sommerurlaub, Festival, Clubnacht..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-indigo-500 outline-none" />
       </div>
 
       <!-- Action Buttons -->
@@ -405,7 +426,7 @@
           </div>
           <div>
             <h3 class="text-base font-bold text-white">App-Einstellungen</h3>
-            <span class="text-[10px] text-slate-400">Modelle, Überstunden-Regel & Altsaldo</span>
+            <span class="text-[10px] text-slate-400">Modelle, Urlaubstage & Altsaldo</span>
           </div>
         </div>
         <button onclick="closeConfigModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
@@ -428,6 +449,25 @@
               <input type="text" id="cfg-employee-id" placeholder="z. B. 1042" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white" />
             </div>
           </div>
+        </div>
+
+        <!-- Urlaubskonto Einstellungen -->
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-amber-900/40 space-y-2">
+          <div class="flex items-center space-x-1.5 text-amber-400 font-bold">
+            <i data-lucide="palmtree" class="w-4 h-4"></i>
+            <span>Urlaubsanspruch Verwaltung</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-0.5">Jahresurlaub (Tage)</label>
+              <input type="number" id="cfg-vacation-total" min="0" step="0.5" value="30" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-amber-300 font-mono font-bold text-center" />
+            </div>
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-0.5">Resturlaub Vorjahr (Tage)</label>
+              <input type="number" id="cfg-vacation-carryover" min="0" step="0.5" value="0" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-slate-300 font-mono text-center" />
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-400">Jeder Tag, an dem du im Kalender „🌴 Urlaub“ auswählst, bucht 1 Tag von deinem Anspruch ab.</p>
         </div>
 
         <!-- Overtime Threshold 9h Rule -->
@@ -602,27 +642,31 @@
           <div class="text-right text-xs text-slate-600">
             <div class="font-bold text-sm text-slate-900" id="print-emp-name">Mitarbeiter: Max Mustermann</div>
             <div id="print-emp-id">Personalnr: 1042</div>
-            <div id="print-created-date">Erstellt am: 25.10.2026</div>
+            <div id="print-created-date">Erstellt am: 26.10.2026</div>
           </div>
         </div>
 
-        <!-- Month Summary Key Metrics (Table / Boxes) -->
-        <div class="grid grid-cols-4 gap-2 mb-4 text-center">
-          <div class="border border-slate-300 rounded p-2 bg-slate-50">
-            <span class="text-[9px] uppercase font-bold text-slate-500 block">Soll-Arbeitszeit</span>
-            <span id="print-summary-target" class="text-sm sm:text-base font-bold font-mono text-slate-800">128.00 h</span>
+        <!-- Month Summary Key Metrics (Table / Boxes inkl. Urlaub) -->
+        <div class="grid grid-cols-5 gap-2 mb-4 text-center">
+          <div class="border border-slate-300 rounded p-1.5 bg-slate-50">
+            <span class="text-[8px] uppercase font-bold text-slate-500 block">Soll</span>
+            <span id="print-summary-target" class="text-xs sm:text-sm font-bold font-mono text-slate-800">128.00 h</span>
           </div>
-          <div class="border border-slate-300 rounded p-2 bg-slate-50">
-            <span class="text-[9px] uppercase font-bold text-slate-500 block">Ist-Arbeitszeit</span>
-            <span id="print-summary-worked" class="text-sm sm:text-base font-bold font-mono text-slate-800">136.00 h</span>
+          <div class="border border-slate-300 rounded p-1.5 bg-slate-50">
+            <span class="text-[8px] uppercase font-bold text-slate-500 block">Ist</span>
+            <span id="print-summary-worked" class="text-xs sm:text-sm font-bold font-mono text-slate-800">136.00 h</span>
           </div>
-          <div class="border border-slate-300 rounded p-2 bg-slate-50">
-            <span class="text-[9px] uppercase font-bold text-slate-500 block">Monats-Saldo</span>
-            <span id="print-summary-month-diff" class="text-sm sm:text-base font-bold font-mono text-slate-800">+8.00 h</span>
+          <div class="border border-slate-300 rounded p-1.5 bg-slate-50">
+            <span class="text-[8px] uppercase font-bold text-slate-500 block">Saldo</span>
+            <span id="print-summary-month-diff" class="text-xs sm:text-sm font-bold font-mono text-slate-800">+8.00 h</span>
           </div>
-          <div class="border border-slate-300 rounded p-2 bg-slate-100">
-            <span class="text-[9px] uppercase font-bold text-slate-500 block">Neuer Gesamtstand</span>
-            <span id="print-summary-total-balance" class="text-sm sm:text-base font-black font-mono text-slate-900">84.00 h</span>
+          <div class="border border-slate-300 rounded p-1.5 bg-slate-100">
+            <span class="text-[8px] uppercase font-bold text-slate-500 block">Gesamt-ÜS</span>
+            <span id="print-summary-total-balance" class="text-xs sm:text-sm font-black font-mono text-slate-900">84.00 h</span>
+          </div>
+          <div class="border border-amber-300 rounded p-1.5 bg-amber-50">
+            <span class="text-[8px] uppercase font-bold text-amber-700 block">Resturlaub</span>
+            <span id="print-summary-vacation-left" class="text-xs sm:text-sm font-black font-mono text-amber-900">30 Tage</span>
           </div>
         </div>
 
@@ -648,7 +692,7 @@
         </div>
 
         <!-- Legal Signature Section -->
-        <div class="grid grid-cols-2 gap-8 pt-10 mt-6 border-t border-slate-300 text-xs">
+        <div class="grid grid-cols-2 gap-8 pt-8 mt-4 border-t border-slate-300 text-xs">
           <div>
             <div class="border-b border-slate-400 pb-8"></div>
             <p class="mt-1 text-slate-600 font-medium">Datum, Unterschrift Arbeitnehmer</p>
@@ -681,6 +725,8 @@
       thresholdEnabled: true,
       thresholdHours: 9.0,
       initialBalance: 12.0, // Restüberstunden aus dem Vorjahr 2025
+      vacationTotal: 30,    // 30 Tage Jahresurlaub
+      vacationCarryover: 0, // Resturlaub aus dem Vorjahr
       models: [
         {
           id: 'model-1',
@@ -870,6 +916,36 @@
     }
 
     /* ----------------------------------------------------
+       URLAUBSKONTO BERECHNUNG
+    ---------------------------------------------------- */
+    function getVacationStats() {
+      const currentYear = currentDate.getFullYear();
+      let usedDays = 0;
+
+      for (const [key, entry] of Object.entries(entries)) {
+        if (entry.type === 'vacation') {
+          const entryYear = parseInt(key.substring(0, 4));
+          if (entryYear === currentYear) {
+            // Ein Urlaubstag wird nur gewertet, wenn an dem Tag laut Modell auch gearbeitet werden müsste
+            const target = getTargetHoursForDate(key);
+            if (target > 0 || (entry.targetHours && entry.targetHours > 0)) {
+              usedDays += 1;
+            }
+          }
+        }
+      }
+
+      const totalAllowed = Number(appConfig.vacationTotal || 30) + Number(appConfig.vacationCarryover || 0);
+      const remainingDays = totalAllowed - usedDays;
+
+      return {
+        total: totalAllowed,
+        used: usedDays,
+        remaining: remainingDays
+      };
+    }
+
+    /* ----------------------------------------------------
        OVERTIME CALCULATION LOGIC
     ---------------------------------------------------- */
     function calculateDailyOvertimeDiff(workedHours, targetHours, type, entryObj) {
@@ -963,7 +1039,11 @@
           let badgeColor = 'bg-slate-800 text-slate-300 border-slate-700';
           let borderTheme = 'border-slate-800 bg-slate-900/80';
 
-          if (diff > 0) {
+          if (entry.type === 'vacation') {
+            badgeColor = 'bg-amber-950/80 text-amber-300 border-amber-800/80';
+            borderTheme = 'border-amber-800/50 bg-amber-950/20';
+            dayContent += `<div class="flex items-center space-x-0.5"><span class="text-[9px]">🌴</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></div></div>`;
+          } else if (diff > 0) {
             badgeColor = 'bg-emerald-950/80 text-emerald-400 border-emerald-800/80';
             borderTheme = 'border-emerald-800/50 bg-emerald-950/20';
             dayContent += `<div class="flex items-center space-x-0.5">${entry.isOvernight ? '<span class="text-[9px]">🌙</span>' : ''}<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span></div></div>`;
@@ -971,10 +1051,10 @@
             badgeColor = 'bg-rose-950/80 text-rose-400 border-rose-800/80';
             borderTheme = 'border-rose-900/50 bg-rose-950/20';
             dayContent += `<div class="flex items-center space-x-0.5">${entry.isOvernight ? '<span class="text-[9px]">🌙</span>' : ''}<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span></div></div>`;
-          } else if (entry.type === 'vacation' || entry.type === 'sick') {
-            badgeColor = 'bg-amber-950/80 text-amber-300 border-amber-800/80';
-            borderTheme = 'border-amber-800/40 bg-amber-950/15';
-            dayContent += `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></div>`;
+          } else if (entry.type === 'sick') {
+            badgeColor = 'bg-rose-950/60 text-rose-300 border-rose-800/60';
+            borderTheme = 'border-rose-900/30 bg-rose-950/15';
+            dayContent += `<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span></div>`;
           } else {
             badgeColor = 'bg-indigo-950/80 text-indigo-300 border-indigo-800/80';
             borderTheme = 'border-indigo-900/40 bg-indigo-950/20';
@@ -983,13 +1063,17 @@
 
           dayCell.className += ` ${borderTheme}`;
 
+          let labelCenter = entry.type === 'work' ? worked.toFixed(1) + 'h' :
+                            (entry.type === 'vacation' ? '🌴 Urlaub' :
+                            (entry.type === 'reduction' ? 'Abbau' : entry.type.substring(0,3)));
+
           dayContent += `
             <div class="my-auto text-center">
-              <span class="text-[10px] font-mono block text-white font-semibold leading-none">${entry.type === 'work' ? worked.toFixed(1) + 'h' : (entry.type === 'reduction' ? 'Abbau' : entry.type.substring(0,3))}</span>
+              <span class="text-[10px] font-mono block ${entry.type === 'vacation' ? 'text-amber-300 font-bold' : 'text-white font-semibold'} leading-none">${labelCenter}</span>
             </div>
             <div class="text-right">
               <span class="text-[9px] px-1 py-0.2 rounded font-mono font-bold border ${badgeColor}">
-                ${diff !== 0 ? (diff > 0 ? '+' : '') + diff.toFixed(1) : '±0'}
+                ${entry.type === 'vacation' ? 'Urlaub' : (diff !== 0 ? (diff > 0 ? '+' : '') + diff.toFixed(1) : '±0')}
               </span>
             </div>
           `;
@@ -1013,11 +1097,11 @@
       }
 
       document.getElementById('kpi-month-worked').innerText = `${monthWorkedSum.toFixed(1)}h`;
-      document.getElementById('kpi-month-target').innerText = `Soll: ${monthTargetSum.toFixed(1)}h`;
+      document.getElementById('kpi-month-target').innerText = `S: ${monthTargetSum.toFixed(0)}h`;
 
       const kpiMonthBal = document.getElementById('kpi-month-balance');
       kpiMonthBal.innerText = formatHours(monthDiffSum);
-      kpiMonthBal.className = `text-base sm:text-lg font-bold font-mono my-0.5 ${monthDiffSum >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      kpiMonthBal.className = `text-sm sm:text-base font-bold font-mono my-0.5 ${monthDiffSum >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
 
       updateTotalBalances();
     }
@@ -1046,8 +1130,15 @@
 
       const yearKpi = document.getElementById('kpi-year-balance');
       yearKpi.innerText = formatHours(yearDiff);
-      yearKpi.className = `text-base sm:text-lg font-bold font-mono ${yearDiff >= 0 ? 'text-indigo-400' : 'text-rose-400'}`;
+      yearKpi.className = `text-sm sm:text-base font-bold font-mono ${yearDiff >= 0 ? 'text-indigo-400' : 'text-rose-400'}`;
       document.getElementById('kpi-year-label').innerText = `Jahr ${currentYear}`;
+
+      // Urlaubskonto aktualisieren
+      const vac = getVacationStats();
+      const vacElem = document.getElementById('kpi-vacation-remaining');
+      vacElem.innerText = `${vac.remaining} d`;
+      vacElem.className = `text-sm sm:text-base font-bold font-mono ${vac.remaining < 5 ? 'text-rose-400' : 'text-amber-300'} my-0.5`;
+      document.getElementById('kpi-vacation-used').innerText = `${vac.used} gen.`;
     }
 
     function changeMonth(delta) {
@@ -1058,6 +1149,11 @@
     function jumpToToday() {
       currentDate = new Date();
       renderCalendar();
+    }
+
+    function openVacationOverview() {
+      const vac = getVacationStats();
+      alert(`🌴 Dein Urlaubskonto ${currentDate.getFullYear()}:\n\n• Gesamtanspruch: ${vac.total} Tage (inkl. Übertrag)\n• Genommen: ${vac.used} Tage\n• Verbleibend: ${vac.remaining} Tage\n\nDu kannst deinen Gesamturlaub jederzeit im Einstellungsmenü (⚙️) anpassen.`);
     }
 
     /* ----------------------------------------------------
@@ -1112,17 +1208,28 @@
       types.forEach(t => {
         const btn = document.getElementById(`type-btn-${t}`);
         if (t === type) {
-          btn.className = 'py-2 px-1 rounded-xl border border-indigo-500 bg-indigo-600/30 text-white font-bold text-center';
+          if (t === 'vacation') {
+            btn.className = 'py-2 px-1 rounded-xl border border-amber-500 bg-amber-600/30 text-amber-200 font-bold text-center';
+          } else {
+            btn.className = 'py-2 px-1 rounded-xl border border-indigo-500 bg-indigo-600/30 text-white font-bold text-center';
+          }
         } else {
           btn.className = 'py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 font-medium text-center';
         }
       });
 
       const workFields = document.getElementById('work-input-fields');
+      const vacBanner = document.getElementById('vacation-info-banner');
+
       if (type === 'off') {
         workFields.classList.add('hidden');
+        vacBanner.classList.add('hidden');
+      } else if (type === 'vacation') {
+        workFields.classList.add('hidden');
+        vacBanner.classList.remove('hidden');
       } else {
         workFields.classList.remove('hidden');
+        vacBanner.classList.add('hidden');
       }
 
       calculateModalTimes();
@@ -1210,7 +1317,10 @@
       const infoElem = document.getElementById('modal-calc-info');
       const badgeRule = document.getElementById('modal-badge-rule');
 
-      if (currentModalType === 'reduction') {
+      if (currentModalType === 'vacation') {
+        badgeRule.innerText = 'Urlaubstag';
+        infoElem.innerText = `Urlaubstag: Sollzeit (${defaultTarget.toFixed(1)}h) gilt als erbracht, 1 Urlaubstag wird abgebucht.`;
+      } else if (currentModalType === 'reduction') {
         badgeRule.innerText = 'Freizeitausgleich';
         infoElem.innerText = `Überstundenabbau: Zieht ${defaultTarget.toFixed(1)} Std. vom Überstundenkonto ab.`;
       } else if (appConfig.thresholdEnabled) {
@@ -1301,6 +1411,8 @@
       document.getElementById('cfg-threshold-enabled').checked = !!appConfig.thresholdEnabled;
       document.getElementById('cfg-threshold-hours').value = appConfig.thresholdHours || 9.0;
       document.getElementById('cfg-initial-balance').value = appConfig.initialBalance || 12.0;
+      document.getElementById('cfg-vacation-total').value = appConfig.vacationTotal !== undefined ? appConfig.vacationTotal : 30;
+      document.getElementById('cfg-vacation-carryover').value = appConfig.vacationCarryover !== undefined ? appConfig.vacationCarryover : 0;
 
       renderConfigModelsList();
 
@@ -1359,6 +1471,8 @@
       appConfig.thresholdEnabled = document.getElementById('cfg-threshold-enabled').checked;
       appConfig.thresholdHours = Number(document.getElementById('cfg-threshold-hours').value || 9.0);
       appConfig.initialBalance = Number(document.getElementById('cfg-initial-balance').value || 0.0);
+      appConfig.vacationTotal = Number(document.getElementById('cfg-vacation-total').value || 30);
+      appConfig.vacationCarryover = Number(document.getElementById('cfg-vacation-carryover').value || 0);
 
       appConfig.models.forEach((m, idx) => {
         m.name = document.getElementById(`model-name-${idx}`).value.trim() || 'Modell';
@@ -1407,13 +1521,14 @@
           <div class="space-y-0.5">
             <div class="flex items-center space-x-2">
               <span class="font-mono text-indigo-400 font-semibold">${d.toLocaleDateString('de-DE')}</span>
-              <span class="font-bold text-white">${item.note ? item.note.split('(')[0] : 'Einsatz'}</span>
+              <span class="font-bold text-white">${item.note ? item.note.split('(')[0] : (item.type === 'vacation' ? 'Urlaub' : 'Einsatz')}</span>
               ${item.isOvernight ? '<span class="text-[9px] bg-violet-950 text-violet-300 border border-violet-800 px-1 rounded">🌙 Nacht</span>' : ''}
+              ${item.type === 'vacation' ? '<span class="text-[9px] bg-amber-950 text-amber-300 border border-amber-800 px-1 rounded">🌴 Urlaub</span>' : ''}
             </div>
             <p class="text-[11px] text-slate-400">${item.start && item.end ? `${item.start} - ${item.end} Uhr ${item.isOvernight ? '(Folgetag)' : ''} (${item.workedHours}h)` : (item.type === 'reduction' ? 'Überstundenabbau' : '')} ${item.note ? '• ' + item.note : ''}</p>
           </div>
           <div class="text-right">
-            <span class="font-mono font-bold text-xs ${diffClass}">${diffText}</span>
+            <span class="font-mono font-bold text-xs ${item.type === 'vacation' ? 'text-amber-400' : diffClass}">${item.type === 'vacation' ? '🌴 Urlaub' : diffText}</span>
           </div>
         `;
         container.appendChild(div);
@@ -1503,16 +1618,16 @@
         }
 
         row.innerHTML = `
-          <td class="py-1.5 px-2 font-mono font-medium">${String(day).padStart(2,'0')}. (${dayNamesShort[dObj.getDay()]})</td>
-          <td class="py-1.5 px-2">${typeLabel}</td>
-          <td class="py-1.5 px-2 font-mono">${timeRange}</td>
-          <td class="py-1.5 px-2 text-right font-mono">${breakText}</td>
-          <td class="py-1.5 px-2 text-right font-mono font-semibold">${workedH > 0 ? workedH.toFixed(2) : '-'}</td>
-          <td class="py-1.5 px-2 text-right font-mono text-slate-500">${targetH > 0 ? targetH.toFixed(2) : '-'}</td>
-          <td class="py-1.5 px-2 text-right font-mono font-bold ${diff > 0 ? 'text-emerald-700' : (diff < 0 ? 'text-rose-700' : 'text-slate-600')}">
+          <td class="py-1 px-1.5 font-mono font-medium">${String(day).padStart(2,'0')}. (${dayNamesShort[dObj.getDay()]})</td>
+          <td class="py-1 px-1.5 ${entry && entry.type === 'vacation' ? 'font-bold text-amber-700' : ''}">${typeLabel}</td>
+          <td class="py-1 px-1.5 font-mono">${timeRange}</td>
+          <td class="py-1 px-1.5 text-right font-mono">${breakText}</td>
+          <td class="py-1 px-1.5 text-right font-mono font-semibold">${workedH > 0 ? workedH.toFixed(2) : '-'}</td>
+          <td class="py-1 px-1.5 text-right font-mono text-slate-500">${targetH > 0 ? targetH.toFixed(2) : '-'}</td>
+          <td class="py-1 px-1.5 text-right font-mono font-bold ${diff > 0 ? 'text-emerald-700' : (diff < 0 ? 'text-rose-700' : 'text-slate-600')}">
             ${diff !== 0 ? (diff > 0 ? '+' : '') + diff.toFixed(2) : '0.00'}
           </td>
-          <td class="py-1.5 px-2 text-[10px] text-slate-600">${note}</td>
+          <td class="py-1 px-1.5 text-[10px] text-slate-600">${note}</td>
         `;
 
         tbody.appendChild(row);
@@ -1529,6 +1644,10 @@
       }
       document.getElementById('print-summary-total-balance').innerText = `${overallBalance >= 0 ? '+' : ''}${overallBalance.toFixed(2)} h`;
 
+      // Resturlaub im PDF anzeigen
+      const vac = getVacationStats();
+      document.getElementById('print-summary-vacation-left').innerText = `${vac.remaining} von ${vac.total}`;
+
       const modal = document.getElementById('report-modal');
       modal.classList.remove('opacity-0', 'pointer-events-none');
     }
@@ -1544,8 +1663,9 @@
       const worked = document.getElementById('print-summary-worked').innerText;
       const diff = document.getElementById('print-summary-month-diff').innerText;
       const total = document.getElementById('print-summary-total-balance').innerText;
+      const vac = getVacationStats();
 
-      const summary = `📊 ${monthText}\n👤 ${appConfig.employeeName}\n\n• Soll: ${target}\n• Ist: ${worked}\n• Monats-Saldo: ${diff}\n• Gesamtstand: ${total}\n\nErfasst mit WorkPulse App.`;
+      const summary = `📊 ${monthText}\n👤 ${appConfig.employeeName}\n\n• Soll: ${target}\n• Ist: ${worked}\n• Monats-Saldo: ${diff}\n• Gesamtstand: ${total}\n• Resturlaub: ${vac.remaining} von ${vac.total} Tagen\n\nErfasst mit WorkPulse App.`;
 
       if (navigator.share) {
         navigator.share({
